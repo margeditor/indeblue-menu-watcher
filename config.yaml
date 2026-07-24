@@ -1,1 +1,10 @@
+restaurant:
+  name: "IndeBlue Indian Bistro"
+  instagram_username: "indeblueindianbistro"
 
+email:
+  recipient: "menus.crawlers732@passinbox.com"
+  sender_name: "IndeBlue Menu Watcher"
+
+settings:
+  check_time: "10:30"
