@@ -1,8 +1,7 @@
 import os
-import smtplib
-import requests
 import yaml
-from bs4 import BeautifulSoup
+import feedparser
+import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -12,40 +11,28 @@ def load_config():
         return yaml.safe_load(f)
 
 
-def get_instagram_caption(username):
-    """
-    Attempts to retrieve public Instagram page metadata.
-    """
-    url = f"https://www.instagram.com/{username}/"
+def get_latest_post(feed_url):
+    feed = feedparser.parse(feed_url)
 
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 Chrome/120 Safari/537.36"
-        )
-    }
+    if not feed.entries:
+        return None
 
-    response = requests.get(url, headers=headers, timeout=20)
-    response.raise_for_status()
-
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    # Look for Open Graph description
-    description = soup.find(
-        "meta",
-        property="og:description"
-    )
-
-    if description:
-        return description.get("content", "")
-
-    return None
+    return feed.entries[0]
 
 
-def send_email(subject, body):
+def is_buffet_post(post, keywords):
+    text = (
+        post.get("title", "")
+        + " "
+        + post.get("summary", "")
+    ).lower()
+
+    return any(word.lower() in text for word in keywords)
+
+
+def send_email(subject, body, recipient):
     username = os.environ["GMAIL_USERNAME"]
     password = os.environ["GMAIL_APP_PASSWORD"]
-    recipient = os.environ["EMAIL_RECIPIENT"]
 
     msg = MIMEMultipart()
     msg["From"] = username
@@ -62,19 +49,29 @@ def send_email(subject, body):
 def main():
     config = load_config()
 
-    instagram = config["restaurant"]["instagram_username"]
+    post = get_latest_post(config["rss"]["url"])
 
-    caption = get_instagram_caption(instagram)
-
-    if not caption:
-        print("No Instagram caption found.")
+    if not post:
+        print("No posts found.")
         return
 
-    # First version: send whatever Instagram exposes.
-    # Later we will filter specifically for buffet posts.
+    if not is_buffet_post(post, config["filter"]["keywords"]):
+        print("Latest post does not appear to be buffet-related.")
+        return
+
+    body = f"""
+{post.title}
+
+{post.summary}
+
+Link:
+{post.link}
+"""
+
     send_email(
-        "IndeBlue Menu Update",
-        caption
+        "IndeBlue Lunch Buffet Update",
+        body,
+        config["email"]["recipient"]
     )
 
     print("Email sent.")
