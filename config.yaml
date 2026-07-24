@@ -1,10 +1,15 @@
 restaurant:
   name: "IndeBlue Indian Bistro"
-  instagram_username: "indeblueindianbistro"
+
+rss:
+  url: "https://rss.app/feeds/rOoNia5bcDuLby4N.xml"
 
 email:
   recipient: "menus.crawlers732@passinbox.com"
   sender_name: "IndeBlue Menu Watcher"
 
-settings:
-  check_time: "10:30"
+filter:
+  keywords:
+    - buffet
+    - lunch
+    - today
